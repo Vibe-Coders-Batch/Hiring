@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.uv-cache/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# DVC managed (data lives on S3 remote)
+data/
+!data/.gitkeep
+.dvc/cache/
+.dvc/tmp/
+
+# Trained model artifacts (versioned in SageMaker Model Registry)
+artifacts/
+*.onnx
+*.pt
+*.bin
+
+# SageMaker local mode runs
+.sagemaker-local/

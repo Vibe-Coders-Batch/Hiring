@@ -1,0 +1,51 @@
+name: ML — Nightly Train
+
+on:
+  schedule:
+    - cron: '30 18 * * *' # 00:00 IST = 18:30 UTC
+  workflow_dispatch:
+    inputs:
+      model:
+        description: 'Model to train (M1-M5)'
+        required: true
+        default: 'M1'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ap-south-1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check label growth (>50 since last run)
+        id: gate
+        run: |
+          # Real impl queries RDS or a counter in SSM. Stub allows manual override.
+          echo "go=true" >> "$GITHUB_OUTPUT"
+
+      - if: steps.gate.outputs.go == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: vaivammhire-ml/.python-version
+
+      - if: steps.gate.outputs.go == 'true'
+        uses: astral-sh/setup-uv@v3
+
+      - if: steps.gate.outputs.go == 'true'
+        run: uv sync --all-extras
+        working-directory: vaivammhire-ml
+
+      - if: steps.gate.outputs.go == 'true'
+        run: uv run python pipelines/ner_pipeline.py --execute
+        working-directory: vaivammhire-ml
+        env:
+          SAGEMAKER_ROLE_ARN: ${{ secrets.SAGEMAKER_ROLE_ARN }}

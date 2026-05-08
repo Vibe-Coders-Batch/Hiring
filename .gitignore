@@ -5,15 +5,13 @@
 # Sensitive: candidate resume data — DPDP / PII (per PRD §12)
 Naukri Sales Profiles/
 **/resumes_raw/
-*.pdf
-*.docx
 
 # Editor
 .vscode/
 .idea/
 *.swp
 
-# Node / Next.js (for when app repo lands)
+# Node / Next.js
 node_modules/
 .next/
 .turbo/
@@ -29,13 +27,17 @@ coverage/
 .env.*
 !.env.example
 
-# Python / SageMaker (for when ML repo lands)
+# Python / SageMaker
 __pycache__/
 *.py[cod]
 .venv/
 venv/
+.uv-cache/
 .ipynb_checkpoints/
 *.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # DVC artifacts (tracked separately on S3 remote)
 .dvc/cache/
@@ -45,8 +47,18 @@ venv/
 cdk.out/
 *.cdk.context.json
 
+# Trained model artifacts (versioned in SageMaker Model Registry)
+artifacts/
+*.onnx
+*.pt
+*.bin
+
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
+
+# Playwright
+playwright-report/
+test-results/

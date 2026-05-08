@@ -1,0 +1,28 @@
+{
+  "name": "vaivammhire-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "VaivammHire — AWS-native AI recruitment platform (monorepo).",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.11.0",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "app:dev": "pnpm --filter vaivammhire-app dev",
+    "app:build": "pnpm --filter vaivammhire-app build",
+    "app:test": "pnpm --filter vaivammhire-app test",
+    "app:lint": "pnpm --filter vaivammhire-app lint",
+    "infra:synth": "pnpm --filter vaivammhire-infra synth",
+    "infra:diff": "pnpm --filter vaivammhire-infra diff",
+    "infra:deploy": "pnpm --filter vaivammhire-infra deploy",
+    "ml:install": "cd vaivammhire-ml && uv sync",
+    "ml:test": "cd vaivammhire-ml && uv run pytest",
+    "lint:all": "pnpm -r lint",
+    "test:all": "pnpm -r test"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "prettier": "^3.3.3"
+  }
+}
