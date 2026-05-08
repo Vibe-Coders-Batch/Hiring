@@ -1,8 +1,14 @@
 name: Deploy Staging
 
+# Manual-only until GitHub OIDC + AWS role are wired up. To re-enable auto-deploy
+# on every push to main:
+#   1. Set up GitHub OIDC in your AWS account.
+#   2. Create a deploy role and add its ARN as repo secret AWS_DEPLOY_ROLE_ARN.
+#   3. Uncomment the `push:` trigger below.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
 
 permissions:
   id-token: write
@@ -23,16 +29,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - uses: aws-actions/configure-aws-credentials@v4
-        if: ${{ secrets.AWS_DEPLOY_ROLE_ARN != '' }}
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-      - if: ${{ secrets.AWS_DEPLOY_ROLE_ARN == '' }}
-        run: |
-          echo "::warning::AWS_DEPLOY_ROLE_ARN not configured — skipping deploy."
-          echo "Set up GitHub OIDC and add the role ARN as a repo secret to enable auto-deploy."
-          exit 0
-      - if: ${{ secrets.AWS_DEPLOY_ROLE_ARN != '' }}
-        run: pnpm install --no-frozen-lockfile
-      - if: ${{ secrets.AWS_DEPLOY_ROLE_ARN != '' }}
-        run: pnpm --filter vaivammhire-infra deploy -- --context env=staging
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm --filter vaivammhire-infra deploy -- --context env=staging
