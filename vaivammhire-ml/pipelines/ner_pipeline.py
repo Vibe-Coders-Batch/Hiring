@@ -12,12 +12,12 @@ import argparse
 import logging
 import os
 
+from sagemaker.model import Model
 from sagemaker.pytorch import PyTorch
+from sagemaker.workflow.model_step import ModelStep
 from sagemaker.workflow.parameters import ParameterInteger, ParameterString
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import TrainingStep
-from sagemaker.workflow.model_step import ModelStep
-from sagemaker.model import Model
 
 logger = logging.getLogger(__name__)
 

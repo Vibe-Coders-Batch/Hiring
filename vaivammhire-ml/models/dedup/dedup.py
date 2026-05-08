@@ -7,8 +7,8 @@ needed for v1 (PRD §7.1). Lives in inference/dedup_lambda.py at runtime.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from datasketch import MinHash, MinHashLSH
 

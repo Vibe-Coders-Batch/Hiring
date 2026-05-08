@@ -22,8 +22,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --no-frozen-lockfile
         working-directory: .
       - run: pnpm typecheck
@@ -42,8 +40,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --no-frozen-lockfile
         working-directory: .
       - run: pnpm synth

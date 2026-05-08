@@ -26,8 +26,9 @@ import logging
 import sys
 import time
 from pathlib import Path
+from collections.abc import Callable
 from statistics import quantiles
-from typing import Any, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
