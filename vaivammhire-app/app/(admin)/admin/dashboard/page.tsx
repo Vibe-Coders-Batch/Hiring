@@ -1,6 +1,6 @@
 import { db } from '@/server/db';
 import { applications, candidates, jobs, modelRuns, trainingLabels } from '@/server/db/schema';
-import { count, eq, gte, sql } from 'drizzle-orm';
+import { count, eq, sql } from 'drizzle-orm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata = { title: 'Dashboard' };

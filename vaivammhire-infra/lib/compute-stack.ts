@@ -101,19 +101,49 @@ export class ComputeStack extends cdk.Stack {
 
     // ── Screening pipeline Step Functions (PRD §6.3) ────────────────────────
     // S3 ObjectCreated → EventBridge rule → Step Functions → Textract → Bedrock → DB.
+    // The AI policies live inline here (not via the cross-stack BedrockInvokeRole)
+    // to avoid a Compute → AI → DLQ dependency cycle.
     const screeningHandler = new NodejsFunction(this, 'ScreeningHandler', {
       runtime: lambda.Runtime.NODEJS_20_X,
       memorySize: 1024,
       timeout: cdk.Duration.minutes(5),
       vpc: props.vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      role: props.bedrockInvokeRole as iam.Role,
       handler: 'handler',
       entry: './lib/handlers/screening-stub.ts',
       environment: commonEnv,
       deadLetterQueue: screeningDlq,
     });
     props.resumesBucket.grantRead(screeningHandler);
+    props.databaseSecret.grantRead(screeningHandler);
+
+    screeningHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['bedrock:InvokeModel', 'bedrock:Converse', 'bedrock:ConverseStream'],
+        resources: [
+          `arn:aws:bedrock:${this.region}::foundation-model/anthropic.*`,
+          `arn:aws:bedrock:ap-southeast-1::foundation-model/anthropic.*`,
+          `arn:aws:bedrock:${this.region}::foundation-model/amazon.titan-embed-text-*`,
+        ],
+      }),
+    );
+    screeningHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'textract:DetectDocumentText',
+          'textract:AnalyzeDocument',
+          'textract:StartDocumentTextDetection',
+          'textract:GetDocumentTextDetection',
+        ],
+        resources: ['*'],
+      }),
+    );
+    screeningHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['comprehend:DetectEntities', 'comprehend:DetectPiiEntities'],
+        resources: ['*'],
+      }),
+    );
 
     const definition = new tasks.LambdaInvoke(this, 'RunScreening', {
       lambdaFunction: screeningHandler,
