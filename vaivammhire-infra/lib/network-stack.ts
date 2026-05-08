@@ -26,11 +26,15 @@ export class NetworkStack extends cdk.Stack {
     vpc.addGatewayEndpoint('S3Endpoint', { service: ec2.GatewayVpcEndpointAwsService.S3 });
 
     // Interface endpoints for AWS APIs the app calls — keeps traffic on the AWS network.
-    vpc.addInterfaceEndpoint('BedrockEndpoint', { service: ec2.InterfaceVpcEndpointAwsService.BEDROCK_RUNTIME });
-    vpc.addInterfaceEndpoint('TextractEndpoint', { service: ec2.InterfaceVpcEndpointAwsService.TEXTRACT });
-    vpc.addInterfaceEndpoint('ComprehendEndpoint', { service: ec2.InterfaceVpcEndpointAwsService.COMPREHEND });
-    vpc.addInterfaceEndpoint('SecretsManagerEndpoint', { service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER });
-    vpc.addInterfaceEndpoint('SesEndpoint', { service: ec2.InterfaceVpcEndpointAwsService.EMAIL_SMTP });
+    // Each interface endpoint is ~$7/month idle, so we add only what the hot path needs.
+    // Skipped: SES (we use the API not SMTP, and outbound SES via NAT works fine for now).
+    if (props.envName === 'prod') {
+      vpc.addInterfaceEndpoint('BedrockEndpoint', { service: ec2.InterfaceVpcEndpointAwsService.BEDROCK_RUNTIME });
+      vpc.addInterfaceEndpoint('TextractEndpoint', { service: ec2.InterfaceVpcEndpointAwsService.TEXTRACT });
+      vpc.addInterfaceEndpoint('ComprehendEndpoint', { service: ec2.InterfaceVpcEndpointAwsService.COMPREHEND });
+      vpc.addInterfaceEndpoint('SecretsManagerEndpoint', { service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER });
+    }
+    // In dev/staging the Lambda reaches AWS APIs via NAT — slightly slower, much cheaper.
 
     this.vpc = vpc;
   }

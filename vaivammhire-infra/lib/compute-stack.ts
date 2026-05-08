@@ -10,6 +10,7 @@ import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
@@ -19,6 +20,7 @@ export interface ComputeStackProps extends cdk.StackProps {
   envName: string;
   vpc: ec2.IVpc;
   database: rds.IDatabaseCluster;
+  databaseSecret: secretsmanager.ISecret;
   resumesBucket: s3.IBucket;
   offersBucket: s3.IBucket;
   userPool: cognito.IUserPool;
@@ -44,11 +46,13 @@ export class ComputeStack extends cdk.Stack {
     // Common Lambda env applied to every function.
     const commonEnv: Record<string, string> = {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
+      ENV_NAME: props.envName,
       RESUMES_BUCKET: props.resumesBucket.bucketName,
       OFFERS_BUCKET: props.offersBucket.bucketName,
       EVENT_BUS_NAME: bus.eventBusName,
       COGNITO_USER_POOL_ID: props.userPool.userPoolId,
       COGNITO_CANDIDATE_POOL_ID: props.candidatePool.userPoolId,
+      DATABASE_SECRET_ARN: props.databaseSecret.secretArn,
     };
 
     // OpenNext-built Next.js app handler (placeholder asset path until OpenNext build wires up).
@@ -69,7 +73,7 @@ export class ComputeStack extends cdk.Stack {
 
     props.resumesBucket.grantReadWrite(appHandler);
     props.offersBucket.grantReadWrite(appHandler);
-    props.database.grantConnect(appHandler);
+    props.databaseSecret.grantRead(appHandler);
     bus.grantPutEventsTo(appHandler);
     appHandler.addToRolePolicy(
       new iam.PolicyStatement({
@@ -77,6 +81,11 @@ export class ComputeStack extends cdk.Stack {
         resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:vaivammhire/*`],
       }),
     );
+
+    // Allow the app Lambda to talk to Aurora over Postgres on 5432.
+    if (props.database instanceof rds.DatabaseCluster) {
+      props.database.connections.allowDefaultPortFrom(appHandler);
+    }
 
     // HTTP API Gateway for webhooks (Documenso e-sign, WhatsApp inbound, Cognito hooks).
     const httpApi = new apigw.HttpApi(this, 'HttpApi', {

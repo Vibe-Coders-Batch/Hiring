@@ -41,6 +41,7 @@ const compute = new ComputeStack(app, `VaivammHire-Compute-${envName}`, {
   envName,
   vpc: network.vpc,
   database: data.database,
+  databaseSecret: data.databaseSecret,
   resumesBucket: data.resumesBucket,
   offersBucket: data.offersBucket,
   userPool: auth.userPool,
