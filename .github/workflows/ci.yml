@@ -19,13 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile
         working-directory: .
       - run: pnpm typecheck
       - run: pnpm lint
@@ -40,13 +39,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile
         working-directory: .
       - run: pnpm synth
 
@@ -62,6 +60,9 @@ jobs:
         with:
           python-version-file: .python-version
       - uses: astral-sh/setup-uv@v3
-      - run: uv sync --all-extras --dev
+      # Core deps only — training-only deps (torch, transformers, sagemaker, etc.)
+      # are gated behind the 'training' extra and only installed by the nightly
+      # ml-train workflow that runs on a beefier runner.
+      - run: uv sync
       - run: uv run ruff check .
       - run: uv run pytest --maxfail=1

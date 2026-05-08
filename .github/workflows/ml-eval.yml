@@ -31,7 +31,7 @@ jobs:
         with:
           python-version-file: vaivammhire-ml/.python-version
       - uses: astral-sh/setup-uv@v3
-      - run: uv sync --all-extras
+      - run: uv sync --extra training
         working-directory: vaivammhire-ml
       - run: uv run python eval/run_eval.py --model "${{ inputs.model || 'M1' }}" --version "${{ inputs.version || 'latest' }}" --out eval_metrics.json
         working-directory: vaivammhire-ml

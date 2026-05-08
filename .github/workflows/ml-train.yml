@@ -41,7 +41,7 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       - if: steps.gate.outputs.go == 'true'
-        run: uv sync --all-extras
+        run: uv sync --extra training
         working-directory: vaivammhire-ml
 
       - if: steps.gate.outputs.go == 'true'

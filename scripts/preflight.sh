@@ -7,14 +7,27 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib.sh"
 
 step "Tooling"
+declare -A INSTALL_HINTS=(
+  [aws]="brew install awscli"
+  [node]="brew install node@20"
+  [pnpm]="brew install pnpm"
+  [docker]="brew install --cask docker"
+  [uv]="brew install astral-sh/uv/uv"
+)
+MISSING=()
 for t in aws node pnpm docker; do
   if command -v "$t" >/dev/null; then
     ok "$t: $(command -v "$t")"
   else
-    warn "$t: NOT INSTALLED"
+    warn "$t: NOT INSTALLED   →   ${INSTALL_HINTS[$t]}"
+    MISSING+=("$t")
   fi
 done
-command -v uv >/dev/null && ok "uv: $(command -v uv)" || warn "uv: NOT INSTALLED (only needed for ML repo)"
+if command -v uv >/dev/null; then
+  ok "uv: $(command -v uv)"
+else
+  warn "uv: NOT INSTALLED (optional, ML repo only)   →   ${INSTALL_HINTS[uv]}"
+fi
 
 step "AWS"
 if aws sts get-caller-identity --profile "$AWS_PROFILE" >/dev/null 2>&1; then
@@ -45,4 +58,11 @@ else
 fi
 
 echo
-echo -e "${C_DIM}If everything's green-ish, run: ./scripts/aws-setup.sh${C_RESET}"
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+  echo -e "${C_BOLD}${C_YELLOW}Install missing tools first:${C_RESET}"
+  for t in "${MISSING[@]}"; do
+    echo "  ${INSTALL_HINTS[$t]}"
+  done
+  echo
+fi
+echo -e "${C_DIM}When everything is green: ./scripts/aws-setup.sh${C_RESET}"

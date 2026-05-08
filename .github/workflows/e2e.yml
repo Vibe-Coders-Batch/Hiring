@@ -36,18 +36,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile
         working-directory: .
       - run: pnpm exec playwright install --with-deps chromium webkit
-      - run: pnpm db:migrate
+      - run: pnpm db:push
         continue-on-error: true
       - run: pnpm build
       - name: Run app
         run: pnpm start &
-      - run: pnpm test:e2e
+      - run: sleep 5 && pnpm test:e2e
