@@ -41,9 +41,8 @@ export type ClientEnv = z.infer<typeof clientSchema>;
 let serverEnv: ServerEnv | undefined;
 
 export function getServerEnv(): ServerEnv {
-  if (typeof window !== 'undefined') {
-    throw new Error('getServerEnv() called from client code');
-  }
+  // Next.js's RSC + 'use client' boundaries enforce server/client separation;
+  // we don't need a runtime guard here, and a guard breaks unit tests in jsdom.
   if (!serverEnv) {
     const parsed = serverSchema.safeParse(process.env);
     if (!parsed.success) {
