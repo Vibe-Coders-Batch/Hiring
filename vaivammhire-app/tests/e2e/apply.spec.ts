@@ -8,8 +8,8 @@ test.describe('Public apply flow (PRD §19.1 critical journey 2)', () => {
 
   test('privacy page covers DPDP language', async ({ page }) => {
     await page.goto('/privacy');
-    await expect(page.getByText(/DPDP/)).toBeVisible();
-    await expect(page.getByText(/anonymised/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Privacy policy.*DPDP/ })).toBeVisible();
+    await expect(page.getByText(/anonymised/i).first()).toBeVisible();
   });
 
   test('delete-my-data form requires email', async ({ page }) => {
