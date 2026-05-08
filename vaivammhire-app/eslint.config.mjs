@@ -8,6 +8,9 @@ export default [
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'error',
+      // Apostrophes in copy are fine — AI-drafted JD/email text is full of them
+      // and the React rule was triggering on every "Vaivamm's" and "we'll".
+      'react/no-unescaped-entities': 'off',
     },
   },
 ];
