@@ -7,26 +7,29 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib.sh"
 
 step "Tooling"
-declare -A INSTALL_HINTS=(
-  [aws]="brew install awscli"
-  [node]="brew install node@20"
-  [pnpm]="brew install pnpm"
-  [docker]="brew install --cask docker"
-  [uv]="brew install astral-sh/uv/uv"
-)
-MISSING=()
+install_hint() {
+  case "$1" in
+    aws)    echo "brew install awscli" ;;
+    node)   echo "brew install node@20" ;;
+    pnpm)   echo "brew install pnpm" ;;
+    docker) echo "brew install --cask docker" ;;
+    uv)     echo "brew install uv" ;;
+    *)      echo "see https://brew.sh" ;;
+  esac
+}
+MISSING=""
 for t in aws node pnpm docker; do
   if command -v "$t" >/dev/null; then
     ok "$t: $(command -v "$t")"
   else
-    warn "$t: NOT INSTALLED   →   ${INSTALL_HINTS[$t]}"
-    MISSING+=("$t")
+    warn "$t: NOT INSTALLED   →   $(install_hint "$t")"
+    MISSING="$MISSING $t"
   fi
 done
 if command -v uv >/dev/null; then
   ok "uv: $(command -v uv)"
 else
-  warn "uv: NOT INSTALLED (optional, ML repo only)   →   ${INSTALL_HINTS[uv]}"
+  warn "uv: NOT INSTALLED (optional, ML repo only)   →   $(install_hint uv)"
 fi
 
 step "AWS"
@@ -58,10 +61,11 @@ else
 fi
 
 echo
-if [[ ${#MISSING[@]} -gt 0 ]]; then
+MISSING="$(echo "$MISSING" | xargs)"
+if [[ -n "$MISSING" ]]; then
   echo -e "${C_BOLD}${C_YELLOW}Install missing tools first:${C_RESET}"
-  for t in "${MISSING[@]}"; do
-    echo "  ${INSTALL_HINTS[$t]}"
+  for t in $MISSING; do
+    echo "  $(install_hint "$t")"
   done
   echo
 fi
