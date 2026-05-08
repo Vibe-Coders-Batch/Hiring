@@ -25,8 +25,8 @@ import json
 import logging
 import sys
 import time
-from pathlib import Path
 from collections.abc import Callable
+from pathlib import Path
 from statistics import quantiles
 from typing import Any
 
