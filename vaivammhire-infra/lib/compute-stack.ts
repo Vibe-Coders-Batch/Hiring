@@ -82,10 +82,13 @@ export class ComputeStack extends cdk.Stack {
       }),
     );
 
-    // Allow the app Lambda to talk to Aurora over Postgres on 5432.
-    if (props.database instanceof rds.DatabaseCluster) {
-      props.database.connections.allowDefaultPortFrom(appHandler);
-    }
+    // Note: Aurora is publicly accessible in dev/staging with an IP-allowlisted SG
+    // (see data-stack + aws-setup.sh). The app Lambda reaches it over the internet
+    // via NAT for now. We deliberately don't add a Lambda-SG → DB-SG ingress rule
+    // here because that creates a Data ↔ Compute stack dependency cycle in CDK
+    // (Data already depends on Compute via the AppHandler SG; adding the reverse
+    // would deadlock synth). Wire this back up via a shared SG construct in a
+    // future cleanup if we move Aurora back into a private subnet.
 
     // HTTP API Gateway for webhooks (Documenso e-sign, WhatsApp inbound, Cognito hooks).
     const httpApi = new apigw.HttpApi(this, 'HttpApi', {
