@@ -1,0 +1,52 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Sensitive: candidate resume data — DPDP / PII (per PRD §12)
+Naukri Sales Profiles/
+**/resumes_raw/
+*.pdf
+*.docx
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Node / Next.js (for when app repo lands)
+node_modules/
+.next/
+.turbo/
+dist/
+build/
+out/
+coverage/
+.cache/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python / SageMaker (for when ML repo lands)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+*.egg-info/
+
+# DVC artifacts (tracked separately on S3 remote)
+.dvc/cache/
+.dvc/tmp/
+
+# CDK
+cdk.out/
+*.cdk.context.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
