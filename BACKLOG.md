@@ -26,8 +26,6 @@ Source of truth: [`VaivammHire-PRD.md`](./VaivammHire-PRD.md). This backlog oper
 ### Repos & CI bootstrapping
 - [ ] Create GitHub repos: `vaivammhire-app`, `vaivammhire-ml`, `vaivammhire-infra` (PRD §11). The current `Hiring` repo holds the PRD + this backlog until those land.
 - [ ] 🅰️🔐 GitHub Actions Phase 1 secrets: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `LINKEDIN_*`, `GOOGLE_OAUTH_*`, `WHATSAPP_BUSINESS_TOKEN`, `DOCUMENSO_API_KEY`, `TURNSTILE_SECRET_KEY` (PRD §17.1). ✅ AWS keys already added to `Hiring` repo per provided screenshot.
-- [ ] 🅰️📝 Add `CLAUDE.md` to each repo enforcing single-agent dev workflow (PRD §20.3).
-
 ---
 
 ## Phase 1 — Foundation (Weeks 1–4) — *gate: end-to-end hire works*
@@ -207,7 +205,6 @@ Source of truth: [`VaivammHire-PRD.md`](./VaivammHire-PRD.md). This backlog oper
 - [ ] Pre-deploy shadow run: <10% disagreement vs prod model on last 200 predictions (PRD §19.3).
 
 ### 📝 Docs
-- [ ] Per-repo `CLAUDE.md` enforces plan → execute → verify single-agent loop (PRD §20.3).
 - [ ] Privacy policy + DPDP retention notice maintained quarterly (PRD §12.1, §16.12).
 
 ---

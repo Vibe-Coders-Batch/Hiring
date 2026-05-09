@@ -655,8 +655,6 @@ vaivammhire-app/                          ← Track A (TypeScript / Next.js)
 │   ├── e2e/                              ← Playwright
 │   └── fixtures/
 │       └── resumes/                      ← Test PDFs/DOCXs (Tarun-provided)
-├── CLAUDE.md                             ← Repo-level Claude Code instructions
-└── PRD.md                                ← This document
 
 vaivammhire-ml/                           ← Track B (Python / SageMaker)
 ├── data/                                 ← DVC-tracked, S3 remote
@@ -1133,7 +1131,7 @@ The hard one. Approach:
 
 ### 20.3 Build-time note
 
-The codebase itself should be developed by a single Claude Code agent loop — no multi-agent dev orchestration. This is a development workflow choice, not a product architecture choice. The repo's `CLAUDE.md` enforces this: one agent, plan → execute → verify, with this PRD as the single source of truth.
+Development workflow is intentionally linear: plan against this PRD, implement with passing checks (`pnpm lint:all`, `pnpm test:all`, `pnpm infra:synth` when infra changes), then merge.
 
 ### 20.4 AWS region choice
 

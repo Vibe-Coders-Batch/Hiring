@@ -48,4 +48,4 @@ CI (`.github/workflows/deploy-aws-pipeline.yml`) runs `opennext:build` before `c
 
 ## Repo conventions
 
-See [`CLAUDE.md`](./CLAUDE.md).
+Before merging: `pnpm lint:all`, `pnpm test:all`, and `pnpm infra:synth` when CDK changes.
