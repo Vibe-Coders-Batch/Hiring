@@ -1,15 +1,12 @@
-# Push to main → (1) Drizzle migrations against Neon (DATABASE_URL secret)
-#              → (2) CDK deploy --all when AWS_CDK_ENABLED is true (variable OR secret)
+# Neon migrations + AWS CDK deploy.
 #
-# Enable CDK deploy (either works):
+# CDK job runs when EITHER:
 #   • Repository variable AWS_CDK_ENABLED = true  (Settings → Secrets and variables → Actions → Variables)
-#   • Repository secret AWS_CDK_ENABLED = true    (same page → Secrets — matches common UI habits)
+#   • Manual run with "Force CDK deploy" checked (workflow_dispatch)
 #
-# AWS authentication (pick one):
-#   • OIDC: secret AWS_DEPLOY_ROLE_ARN
-#   • Keys: secrets AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
+# GitHub blocks passing secrets through job outputs — do not rely on a secret named AWS_CDK_ENABLED for gating.
 #
-# Other secrets: DATABASE_URL (Neon). Optional variable CDK_ENV (default prod).
+# AWS auth: OIDC secret AWS_DEPLOY_ROLE_ARN, OR secrets AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY.
 
 name: Deploy pipeline (Neon migrate + AWS CDK)
 
@@ -23,6 +20,11 @@ on:
         required: false
         default: false
         type: boolean
+      force_deploy_cdk:
+        description: 'Run CDK even if repo variable AWS_CDK_ENABLED is not true'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: deploy-aws-pipeline-${{ github.ref }}
@@ -33,23 +35,6 @@ permissions:
   contents: read
 
 jobs:
-  cdk-gate:
-    name: Gate · CDK enabled?
-    runs-on: ubuntu-latest
-    outputs:
-      enabled: ${{ steps.check.outputs.enabled }}
-    steps:
-      - id: check
-        env:
-          VAR_EN: ${{ vars.AWS_CDK_ENABLED }}
-          SECRET_EN: ${{ secrets.AWS_CDK_ENABLED }}
-        run: |
-          if [ "${VAR_EN}" = "true" ] || [ "${SECRET_EN}" = "true" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-          fi
-
   neon-migrate:
     name: Neon · Drizzle migrations
     runs-on: ubuntu-latest
@@ -78,10 +63,14 @@ jobs:
 
   deploy-cdk:
     name: AWS · CDK deploy all stacks
-    needs: [neon-migrate, cdk-gate]
+    needs: neon-migrate
     if: >-
       ${{
-        needs.cdk-gate.outputs.enabled == 'true' &&
+        needs.neon-migrate.result == 'success' &&
+        (
+          vars.AWS_CDK_ENABLED == 'true' ||
+          (github.event_name == 'workflow_dispatch' && inputs.force_deploy_cdk == true)
+        ) &&
         (github.event_name != 'workflow_dispatch' || inputs.skip_aws_deploy != true)
       }}
     runs-on: ubuntu-latest
