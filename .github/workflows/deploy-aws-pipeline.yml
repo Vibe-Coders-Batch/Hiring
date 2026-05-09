@@ -1,17 +1,15 @@
-# Push to main → (1) apply Drizzle migrations to Neon using DATABASE_URL secret
-#              → (2) CDK deploy --all (VPC, RDS, S3, Cognito, Lambda, etc.)
+# Push to main → (1) Drizzle migrations against Neon (DATABASE_URL secret)
+#              → (2) CDK deploy --all when AWS_CDK_ENABLED is true (variable OR secret)
 #
-# Required GitHub repo secrets (when CDK deploy is enabled — see AWS_CDK_ENABLED below):
-#   AWS_DEPLOY_ROLE_ARN    IAM role for OIDC (aws-actions/configure-aws-credentials)
+# Enable CDK deploy (either works):
+#   • Repository variable AWS_CDK_ENABLED = true  (Settings → Secrets and variables → Actions → Variables)
+#   • Repository secret AWS_CDK_ENABLED = true    (same page → Secrets — matches common UI habits)
 #
-# Recommended secrets:
-#   DATABASE_URL           Neon Postgres URL for Drizzle migrations (Settings → Secrets → Actions).
+# AWS authentication (pick one):
+#   • OIDC: secret AWS_DEPLOY_ROLE_ARN
+#   • Keys: secrets AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
 #
-# Repository Variables (Settings → Variables → Actions):
-#   AWS_CDK_ENABLED        Set to `true` when OIDC + AWS_DEPLOY_ROLE_ARN are ready; until then the CDK job is skipped so pushes stay green.
-#   CDK_ENV                Optional; defaults to prod (staging for non-prod stacks).
-#
-# Security: rotate database credentials if they were ever pasted into chat, issues, or CI logs.
+# Other secrets: DATABASE_URL (Neon). Optional variable CDK_ENV (default prod).
 
 name: Deploy pipeline (Neon migrate + AWS CDK)
 
@@ -35,6 +33,23 @@ permissions:
   contents: read
 
 jobs:
+  cdk-gate:
+    name: Gate · CDK enabled?
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          VAR_EN: ${{ vars.AWS_CDK_ENABLED }}
+          SECRET_EN: ${{ secrets.AWS_CDK_ENABLED }}
+        run: |
+          if [ "${VAR_EN}" = "true" ] || [ "${SECRET_EN}" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
   neon-migrate:
     name: Neon · Drizzle migrations
     runs-on: ubuntu-latest
@@ -56,15 +71,19 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           if [ -z "${DATABASE_URL:-}" ]; then
-            echo "::notice title=Neon migrations skipped::Repository secret DATABASE_URL is not set. Add your Neon connection string under Settings → Secrets and variables → Actions to apply Drizzle migrations on each push."
+            echo "::notice title=Neon migrations skipped::Add repository secret DATABASE_URL to run Drizzle migrations on push."
             exit 0
           fi
           pnpm exec drizzle-kit migrate
 
   deploy-cdk:
     name: AWS · CDK deploy all stacks
-    needs: neon-migrate
-    if: ${{ vars.AWS_CDK_ENABLED == 'true' && (github.event_name != 'workflow_dispatch' || inputs.skip_aws_deploy != true) }}
+    needs: [neon-migrate, cdk-gate]
+    if: >-
+      ${{
+        needs.cdk-gate.outputs.enabled == 'true' &&
+        (github.event_name != 'workflow_dispatch' || inputs.skip_aws_deploy != true)
+      }}
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -78,10 +97,40 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - name: Decide AWS auth mode
+        id: aws-mode
+        env:
+          ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          AK: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        run: |
+          if [ -n "${ROLE_ARN:-}" ]; then
+            echo "mode=oidc" >> "$GITHUB_OUTPUT"
+          elif [ -n "${AK:-}" ]; then
+            echo "mode=keys" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure AWS (OIDC)
+        if: steps.aws-mode.outputs.mode == 'oidc'
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS (access keys)
+        if: steps.aws-mode.outputs.mode == 'keys'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Missing AWS credentials
+        if: steps.aws-mode.outputs.mode == 'none'
+        run: |
+          echo "::error::Set AWS_DEPLOY_ROLE_ARN (OIDC) or AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY"
+          exit 1
 
       - name: Install workspace
         run: pnpm install --no-frozen-lockfile
