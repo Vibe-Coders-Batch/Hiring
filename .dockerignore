@@ -1,0 +1,12 @@
+**/node_modules
+**/.next
+**/.open-next
+**/cdk.out
+**/.git
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/*.pyc
+.env
+.env.*
+!.env.example

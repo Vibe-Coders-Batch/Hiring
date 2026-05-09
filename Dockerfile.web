@@ -1,0 +1,33 @@
+# Next.js app (monorepo workspace). Runtime env comes from docker-compose.
+FROM node:20-bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /repo
+RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY scripts/docker-entrypoint-web.sh ./scripts/docker-entrypoint-web.sh
+COPY vaivammhire-app ./vaivammhire-app
+
+RUN chmod +x ./scripts/docker-entrypoint-web.sh \
+  && pnpm install --frozen-lockfile
+
+WORKDIR /repo/vaivammhire-app
+# Build-time only — runtime uses compose env (do not set OPENNEXT_BUILD on the running container).
+RUN OPENNEXT_BUILD=1 \
+  NEXT_PUBLIC_APP_URL=http://localhost:3000 \
+  DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build \
+  S3_RESUMES_BUCKET=build \
+  S3_OFFERS_BUCKET=build \
+  S3_TRAINING_BUCKET=build \
+  SES_FROM_ADDRESS=build@example.com \
+  ML_API_FEATURE_FLAGS=m1=off,m2=off,m3=off,m4=off,m5=off \
+  pnpm build
+
+WORKDIR /repo
+ENV NODE_ENV=production
+
+EXPOSE 3000
+ENTRYPOINT ["/bin/sh", "/repo/scripts/docker-entrypoint-web.sh"]

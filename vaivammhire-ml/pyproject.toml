@@ -19,6 +19,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Local Docker / dev HTTP API (FastAPI) — lightweight; no GPU torch stack.
+api = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+]
 # Heavy ML stack — only the nightly SageMaker training pipeline needs these.
 training = [
     "dvc[s3]>=3.55",

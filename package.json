@@ -21,7 +21,9 @@
     "ml:test": "cd vaivammhire-ml && uv run pytest",
     "lint:all": "pnpm -r lint",
     "test:all": "pnpm -r test",
-    "local": "bash scripts/run-local.sh"
+    "local": "bash scripts/run-local.sh",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
