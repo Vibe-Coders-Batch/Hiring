@@ -1,6 +1,6 @@
 # VaivammHire
 
-AWS-native AI recruitment platform for Vaivamm Capital Advisors. Internal-only deployment at `hiring.vaivammcapital.com`.
+AWS-native AI recruitment platform for Vaivamm Capital Advisors. The hosted app URL is the **CloudFront** distribution URL from CDK (`VaivammHire-Frontend-<env>` stack output `CloudFrontUrl`), not a separate marketing domain—set `NEXT_PUBLIC_APP_URL` to that URL when building the Next.js bundle for Lambda/OpenNext.
 
 > Full requirements live in [`VaivammHire-PRD.md`](./VaivammHire-PRD.md). The phased delivery plan is in [`BACKLOG.md`](./BACKLOG.md).
 

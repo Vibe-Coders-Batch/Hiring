@@ -12,6 +12,8 @@ export interface ObservabilityStackProps extends cdk.StackProps {
   envName: string;
   appHandler: lambda.IFunction;
   database: rds.IDatabaseCluster;
+  /** Public jobs board URL (e.g. CloudFront origin + `/jobs`) — no separate marketing domain. */
+  jobsBoardUrl: string;
 }
 
 export class ObservabilityStack extends cdk.Stack {
@@ -49,12 +51,14 @@ export class ObservabilityStack extends cdk.Stack {
     // Synthetics canary on the public job board (PRD §10.6).
     new synthetics.Canary(this, 'JobsCanary', {
       schedule: synthetics.Schedule.rate(cdk.Duration.minutes(10)),
+      environmentVariables: { TARGET_URL: props.jobsBoardUrl },
       test: synthetics.Test.custom({
         code: synthetics.Code.fromInline(
           `const synthetics = require('Synthetics');
            exports.handler = async () => {
              const page = await synthetics.getPage();
-             const url = process.env.TARGET_URL || 'https://hiring.vaivammcapital.com/jobs';
+             const url = process.env.TARGET_URL;
+             if (!url) throw new Error('TARGET_URL not set');
              await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
            };`,
         ),

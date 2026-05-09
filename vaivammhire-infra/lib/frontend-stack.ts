@@ -12,6 +12,9 @@ export interface FrontendStackProps extends cdk.StackProps {
 }
 
 export class FrontendStack extends cdk.Stack {
+  /** Public HTTPS URL for the app (CloudFront). Use for NEXT_PUBLIC_APP_URL when deploying the Next bundle. */
+  public readonly cloudFrontUrl: string;
+
   constructor(scope: Construct, id: string, props: FrontendStackProps) {
     super(scope, id, props);
 
@@ -101,7 +104,9 @@ export class FrontendStack extends cdk.Stack {
       minimumProtocolVersion: cf.SecurityPolicyProtocol.TLS_V1_2_2021,
     });
 
-    new cdk.CfnOutput(this, 'CloudFrontUrl', { value: `https://${distribution.distributionDomainName}` });
+    this.cloudFrontUrl = `https://${distribution.distributionDomainName}`;
+
+    new cdk.CfnOutput(this, 'CloudFrontUrl', { value: this.cloudFrontUrl });
     new cdk.CfnOutput(this, 'StaticBucketName', { value: staticBucket.bucketName });
   }
 }

@@ -9,7 +9,7 @@ const config: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '*.amazonaws.com' },
-      { protocol: 'https', hostname: 'hiring.vaivammcapital.com' },
+      { protocol: 'https', hostname: '*.cloudfront.net' },
     ],
   },
   async headers() {

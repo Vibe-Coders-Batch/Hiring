@@ -13,7 +13,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: { default: 'VaivammHire — Vaivamm Capital Careers', template: '%s · VaivammHire' },
   description: 'Open roles at Vaivamm Capital Advisors.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://hiring.vaivammcapital.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

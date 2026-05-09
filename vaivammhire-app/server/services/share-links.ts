@@ -9,7 +9,7 @@ export interface ShareLinks {
 }
 
 export function buildShareLinks(slug: string, jobTitle: string, brand = 'Vaivamm Capital'): ShareLinks {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hiring.vaivammcapital.com';
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
   const url = `${base}/jobs/${slug}`;
   return {
     url,

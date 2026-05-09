@@ -49,7 +49,7 @@ const compute = new ComputeStack(app, `VaivammHire-Compute-${envName}`, {
   bedrockInvokeRole: ai.bedrockInvokeRole,
 });
 
-new FrontendStack(app, `VaivammHire-Frontend-${envName}`, {
+const frontend = new FrontendStack(app, `VaivammHire-Frontend-${envName}`, {
   env,
   envName,
   apiHandler: compute.appHandler,
@@ -60,6 +60,7 @@ new ObservabilityStack(app, `VaivammHire-Observability-${envName}`, {
   envName,
   appHandler: compute.appHandler,
   database: data.database,
+  jobsBoardUrl: `${frontend.cloudFrontUrl}/jobs`,
 });
 
 app.synth();
