@@ -1,8 +1,11 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import * as cdk from 'aws-cdk-lib';
 import * as cf from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 import { Construct } from 'constructs';
 
@@ -25,6 +28,20 @@ export class FrontendStack extends cdk.Stack {
       removalPolicy: props.envName === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: props.envName !== 'prod',
     });
+
+    const openNextAssetsPath = path.join(__dirname, '..', '..', 'vaivammhire-app', '.open-next', 'assets');
+    if (fs.existsSync(openNextAssetsPath)) {
+      new s3deploy.BucketDeployment(this, 'OpenNextStaticAssets', {
+        sources: [s3deploy.Source.asset(openNextAssetsPath)],
+        destinationBucket: staticBucket,
+        prune: true,
+        cacheControl: [
+          s3deploy.CacheControl.maxAge(cdk.Duration.days(365)),
+          s3deploy.CacheControl.setPublic(),
+          s3deploy.CacheControl.immutable(),
+        ],
+      });
+    }
 
     // WAF managed rule sets in front of CloudFront (PRD §10.4).
     const webAcl = new wafv2.CfnWebACL(this, 'WebAcl', {

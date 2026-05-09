@@ -43,11 +43,26 @@ export type ClientEnv = z.infer<typeof clientSchema>;
 
 let serverEnv: ServerEnv | undefined;
 
+/** Satisfies Zod during `next build` / OpenNext when real secrets are not loaded (CI bundle step). */
+function buildTimeEnvOverrides(): Record<string, string> | undefined {
+  if (process.env.OPENNEXT_BUILD !== '1') return undefined;
+  return {
+    DATABASE_URL:
+      process.env.DATABASE_URL ??
+      'postgresql://opennext_build:opennext_build@127.0.0.1:5432/opennext_build',
+    S3_RESUMES_BUCKET: process.env.S3_RESUMES_BUCKET ?? 'opennext-build-placeholder',
+    S3_OFFERS_BUCKET: process.env.S3_OFFERS_BUCKET ?? 'opennext-build-placeholder',
+    S3_TRAINING_BUCKET: process.env.S3_TRAINING_BUCKET ?? 'opennext-build-placeholder',
+    SES_FROM_ADDRESS: process.env.SES_FROM_ADDRESS ?? 'opennext-build@example.com',
+  };
+}
+
 export function getServerEnv(): ServerEnv {
   // Next.js's RSC + 'use client' boundaries enforce server/client separation;
   // we don't need a runtime guard here, and a guard breaks unit tests in jsdom.
   if (!serverEnv) {
-    const parsed = serverSchema.safeParse(process.env);
+    const merged = { ...process.env, ...buildTimeEnvOverrides() };
+    const parsed = serverSchema.safeParse(merged);
     if (!parsed.success) {
       console.error('Invalid server env:', parsed.error.flatten().fieldErrors);
       throw new Error('Invalid server environment variables');

@@ -127,6 +127,17 @@ jobs:
       - name: Unit tests (app)
         run: pnpm --filter vaivammhire-app test
 
+      # Builds `.open-next/` (Lambda server bundle + static assets). Set repo Variable
+      # NEXT_PUBLIC_APP_URL to your CloudFront URL so client-side URLs match production.
+      - name: OpenNext build (Lambda + S3 assets)
+        env:
+          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+        run: |
+          if [ -z "${NEXT_PUBLIC_APP_URL:-}" ]; then
+            echo "::notice::NEXT_PUBLIC_APP_URL unset — client bundles use localhost; set Actions Variable after first deploy."
+          fi
+          pnpm opennext:build
+
       # Pass context with -c so CDK receives it (pnpm "run deploy --" was leaving stacks on default `dev`).
       # One-time AWS setup: cd vaivammhire-infra && pnpm exec cdk bootstrap aws://ACCOUNT/ap-south-1
       - name: CDK deploy all

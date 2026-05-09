@@ -34,13 +34,17 @@ pnpm infra:synth           # validate CDK
 cd vaivammhire-ml && uv sync && uv run pytest
 ```
 
-## Deploy (staging)
+## Deploy (AWS + CloudFront + OpenNext)
+
+The app runs on **Lambda (Function URL) + S3 + CloudFront** (see `vaivammhire-infra/lib/frontend-stack.ts`). Build the serverless bundle first, then deploy CDK:
 
 ```bash
-pnpm infra:deploy -- --context env=staging
+# From repo root; set NEXT_PUBLIC_APP_URL to your final CloudFront URL for correct client links
+pnpm opennext:build
+cd vaivammhire-infra && pnpm exec cdk deploy --all -c env=prod
 ```
 
-CI deploys automatically on push to `main` (see `.github/workflows/deploy-staging.yml`).
+CI (`.github/workflows/deploy-aws-pipeline.yml`) runs `opennext:build` before `cdk deploy` when `AWS_CDK_ENABLED` is set.
 
 ## Repo conventions
 

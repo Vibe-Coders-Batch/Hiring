@@ -11,6 +11,7 @@
   "scripts": {
     "app:dev": "pnpm --filter vaivammhire-app dev",
     "app:build": "pnpm --filter vaivammhire-app build",
+    "opennext:build": "pnpm --filter vaivammhire-app build:opennext",
     "app:test": "pnpm --filter vaivammhire-app test",
     "app:lint": "pnpm --filter vaivammhire-app lint",
     "infra:synth": "pnpm --filter vaivammhire-infra synth",
