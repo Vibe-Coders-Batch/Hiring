@@ -53,8 +53,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           if [ -z "${DATABASE_URL:-}" ]; then
-            echo "::error::Secret DATABASE_URL is not set. Add it in repo Settings → Secrets and variables → Actions."
-            exit 1
+            echo "::notice title=Neon migrations skipped::Repository secret DATABASE_URL is not set. Add your Neon connection string under Settings → Secrets and variables → Actions to apply Drizzle migrations on each push."
+            exit 0
           fi
           pnpm exec drizzle-kit migrate
 
