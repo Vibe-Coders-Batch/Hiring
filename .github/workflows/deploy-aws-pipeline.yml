@@ -1,12 +1,15 @@
 # Push to main → (1) apply Drizzle migrations to Neon using DATABASE_URL secret
 #              → (2) CDK deploy --all (VPC, RDS, S3, Cognito, Lambda, etc.)
 #
-# Required GitHub repo secrets:
-#   DATABASE_URL          Neon Postgres URL (Settings → Secrets → Actions). Never commit real URLs.
+# Required GitHub repo secrets (when CDK deploy is enabled — see AWS_CDK_ENABLED below):
 #   AWS_DEPLOY_ROLE_ARN    IAM role for OIDC (aws-actions/configure-aws-credentials)
 #
-# Optional GitHub Variables (repo Settings → Variables → Actions):
-#   CDK_ENV                Defaults to prod; use staging for non-prod stacks.
+# Recommended secrets:
+#   DATABASE_URL           Neon Postgres URL for Drizzle migrations (Settings → Secrets → Actions).
+#
+# Repository Variables (Settings → Variables → Actions):
+#   AWS_CDK_ENABLED        Set to `true` when OIDC + AWS_DEPLOY_ROLE_ARN are ready; until then the CDK job is skipped so pushes stay green.
+#   CDK_ENV                Optional; defaults to prod (staging for non-prod stacks).
 #
 # Security: rotate database credentials if they were ever pasted into chat, issues, or CI logs.
 
@@ -61,7 +64,7 @@ jobs:
   deploy-cdk:
     name: AWS · CDK deploy all stacks
     needs: neon-migrate
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_aws_deploy != true }}
+    if: ${{ vars.AWS_CDK_ENABLED == 'true' && (github.event_name != 'workflow_dispatch' || inputs.skip_aws_deploy != true) }}
     runs-on: ubuntu-latest
     environment: production
     env:
