@@ -127,13 +127,16 @@ jobs:
       - name: Unit tests (app)
         run: pnpm --filter vaivammhire-app test
 
+      # Pass context with -c so CDK receives it (pnpm "run deploy --" was leaving stacks on default `dev`).
+      # One-time AWS setup: cd vaivammhire-infra && pnpm exec cdk bootstrap aws://ACCOUNT/ap-south-1
       - name: CDK deploy all
+        working-directory: vaivammhire-infra
         env:
           CDK_CONTEXT_ENV: ${{ vars.CDK_ENV }}
         run: |
           CTX="${CDK_CONTEXT_ENV:-prod}"
           echo "Deploying CDK context env=$CTX"
-          pnpm --filter vaivammhire-infra run deploy -- --context env="$CTX"
+          pnpm exec cdk deploy --all --require-approval never -c "env=${CTX}"
 
       - name: Invalidate CloudFront (optional)
         if: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID != '' }}

@@ -15,7 +15,7 @@
     "app:lint": "pnpm --filter vaivammhire-app lint",
     "infra:synth": "pnpm --filter vaivammhire-infra synth",
     "infra:diff": "pnpm --filter vaivammhire-infra diff",
-    "infra:deploy": "pnpm --filter vaivammhire-infra run deploy",
+    "infra:deploy": "cd vaivammhire-infra && pnpm exec cdk deploy --all --require-approval never",
     "ml:install": "cd vaivammhire-ml && uv sync",
     "ml:test": "cd vaivammhire-ml && uv run pytest",
     "lint:all": "pnpm -r lint",
