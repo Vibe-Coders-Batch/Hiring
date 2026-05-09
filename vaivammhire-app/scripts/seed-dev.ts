@@ -5,13 +5,75 @@
  * Run: pnpm tsx scripts/seed-dev.ts
  */
 
+import { eq } from 'drizzle-orm';
 import { db } from '../server/db';
-import { applications, candidates, compBands, jobs, users } from '../server/db/schema';
+import {
+  applications,
+  candidates,
+  compBands,
+  emailTemplates,
+  jobs,
+  organizations,
+  users,
+} from '../server/db/schema';
 import { buildShareLinks } from '../server/services/share-links';
 import { slugify } from '../lib/slugify';
 
 async function main() {
   console.log('Seeding dev data…');
+
+  const [insertedOrg] = await db
+    .insert(organizations)
+    .values({ name: 'Vaivamm Capital', slug: 'vaivamm-capital' })
+    .onConflictDoNothing()
+    .returning();
+
+  let orgRow = insertedOrg;
+  if (!orgRow) {
+    const [found] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.slug, 'vaivamm-capital'))
+      .limit(1);
+    orgRow = found;
+  }
+  if (!orgRow) throw new Error('Failed to seed organization');
+
+  await db
+    .insert(emailTemplates)
+    .values([
+      {
+        organizationId: orgRow.id,
+        templateKey: 'rejection',
+        name: 'Standard rejection',
+        subject: 'Update on your application — {{job_title}}',
+        bodyHtml:
+          '<p>Hi {{candidate_name}},</p><p>Thank you for your interest in {{job_title}}. We will not be moving forward at this time.</p><p>Kind regards,<br/>The Vaivamm Capital Hiring Team</p>',
+        bodyText:
+          'Hi {{candidate_name}},\n\nThank you for your interest in {{job_title}}. We will not be moving forward at this time.\n\nThe Vaivamm Capital Hiring Team',
+      },
+      {
+        organizationId: orgRow.id,
+        templateKey: 'interview_invite',
+        name: 'Interview invitation',
+        subject: 'Interview — {{job_title}}',
+        bodyHtml:
+          '<p>Hi {{candidate_name}},</p><p>We would like to invite you for an interview for {{job_title}}.</p><p>{{scheduling_note}}</p><p>The Vaivamm Capital Hiring Team</p>',
+        bodyText:
+          'Hi {{candidate_name}},\n\nWe would like to invite you for an interview for {{job_title}}.\n\n{{scheduling_note}}\n\nThe Vaivamm Capital Hiring Team',
+      },
+      {
+        organizationId: orgRow.id,
+        templateKey: 'offer',
+        name: 'Offer letter email',
+        subject: 'Offer — {{job_title}}',
+        bodyHtml:
+          '<p>Hi {{candidate_name}},</p><p>We are pleased to extend an offer for {{job_title}}. Details will follow separately.</p><p>The Vaivamm Capital Hiring Team</p>',
+        bodyText:
+          'Hi {{candidate_name}},\n\nWe are pleased to extend an offer for {{job_title}}. Details will follow separately.\n\nThe Vaivamm Capital Hiring Team',
+      },
+    ])
+    .onConflictDoNothing();
 
   // 1. A user record so foreign keys for createdBy resolve.
   const [hr] = await db
@@ -20,6 +82,7 @@ async function main() {
       email: 'hr.seed@vaivammcapital.com',
       name: 'Seed HR',
       role: 'recruiter',
+      organizationId: orgRow.id,
     })
     .onConflictDoNothing()
     .returning();
@@ -47,6 +110,7 @@ async function main() {
   const [job] = await db
     .insert(jobs)
     .values({
+      organizationId: orgRow.id,
       slug,
       title: 'Senior Relationship Manager',
       department: 'Wealth Advisory',
@@ -110,7 +174,12 @@ Fixed CTC ₹18–24L + 20% variable, reviewed yearly.`,
     if (cand) {
       await db
         .insert(applications)
-        .values({ jobId: job.id, candidateId: cand.id, stage: 'ai_screened' })
+        .values({
+          jobId: job.id,
+          candidateId: cand.id,
+          stage: 'ai_screened',
+          questionnaireAnswers: {} as never,
+        })
         .onConflictDoNothing();
     }
   }

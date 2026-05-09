@@ -28,6 +28,9 @@ const serverSchema = z.object({
   CRM_WEBHOOK_HMAC_SECRET: z.string().optional(),
 
   TURNSTILE_SECRET_KEY: z.string().optional(),
+
+  /** HMAC secret for dev/staff token (`POST /api/auth/dev-session`). Omit in production. */
+  AUTH_DEV_SECRET: z.string().min(16).optional(),
 });
 
 const clientSchema = z.object({

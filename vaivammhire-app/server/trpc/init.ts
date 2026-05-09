@@ -49,3 +49,8 @@ export const adminProcedure = publicProcedure.use(requireRole(['admin']));
 export const recruiterProcedure = publicProcedure.use(
   requireRole(['admin', 'recruiter', 'hiring_manager']),
 );
+
+/** Admin + recruiters + hiring managers + interviewers (internal “member” roles). */
+export const staffProcedure = publicProcedure.use(
+  requireRole(['admin', 'recruiter', 'hiring_manager', 'interviewer']),
+);

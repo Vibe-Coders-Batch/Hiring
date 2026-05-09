@@ -8,6 +8,7 @@ import { jobsRouter } from './jobs';
 import { labelingRouter } from './labeling';
 import { modelsRouter } from './models';
 import { offersRouter } from './offers';
+import { emailTemplatesRouter } from './email-templates';
 
 export const appRouter = router({
   jobs: jobsRouter,
@@ -16,6 +17,7 @@ export const appRouter = router({
   interviews: interviewsRouter,
   offers: offersRouter,
   comms: commsRouter,
+  emailTemplates: emailTemplatesRouter,
   models: modelsRouter,
   labeling: labelingRouter,
   compBands: compBandsRouter,

@@ -7,6 +7,7 @@ import { jobs } from '@/server/db/schema';
 import { generateJobDescription } from '@/server/services/bedrock';
 import { buildShareLinks } from '@/server/services/share-links';
 import { slugify } from '@/lib/slugify';
+import { ensureDefaultOrganization } from '@/lib/org';
 import { publicProcedure, recruiterProcedure, router } from '../init';
 
 const screeningQuestionSchema = z.object({
@@ -104,10 +105,12 @@ export const jobsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const slug = await uniqueSlug(input.title);
       const shareLinks = buildShareLinks(slug, input.title);
+      const org = await ensureDefaultOrganization();
 
       const [job] = await db
         .insert(jobs)
         .values({
+          organizationId: org.id,
           slug,
           title: input.title,
           department: input.department,

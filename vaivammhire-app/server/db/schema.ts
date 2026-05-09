@@ -82,6 +82,13 @@ export const offerStatus = pgEnum('offer_status', [
   'expired',
 ]);
 
+export const emailDeliveryStatus = pgEnum('email_delivery_status', [
+  'queued',
+  'sent',
+  'failed',
+  'bounced',
+]);
+
 export const actorType = pgEnum('actor_type', ['human', 'agent', 'model', 'system']);
 export const labelSource = pgEnum('label_source', [
   'hr_override',
@@ -116,10 +123,24 @@ export const compLocation = pgEnum('comp_location', ['hyderabad', 'remote_india'
 // Tables
 // ─────────────────────────────────────────────────────────────────────────────
 
+export const organizations = pgTable(
+  'organizations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: varchar('name', { length: 200 }).notNull(),
+    slug: varchar('slug', { length: 100 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    slugIdx: uniqueIndex('organizations_slug_idx').on(t.slug),
+  }),
+);
+
 export const users = pgTable(
   'users',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').references(() => organizations.id),
     email: varchar('email', { length: 320 }).notNull(),
     name: varchar('name', { length: 200 }).notNull(),
     role: userRole('role').notNull().default('recruiter'),
@@ -136,6 +157,7 @@ export const jobs = pgTable(
   'jobs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').references(() => organizations.id),
     slug: varchar('slug', { length: 200 }).notNull(),
     title: varchar('title', { length: 200 }).notNull(),
     department: varchar('department', { length: 100 }).notNull(),
@@ -185,6 +207,8 @@ export const applications = pgTable('applications', {
   jobId: uuid('job_id').notNull().references(() => jobs.id),
   candidateId: uuid('candidate_id').notNull().references(() => candidates.id),
   stage: applicationStage('stage').notNull().default('applied'),
+  /** Structured answers keyed by screening question index or prompt */
+  questionnaireAnswers: jsonb('questionnaire_answers').notNull().default({}),
   scoreCard: jsonb('score_card'),
   agentRecommendation: agentRecommendation('agent_recommendation'),
   hrOverride: jsonb('hr_override'),
@@ -254,6 +278,24 @@ export const compBands = pgTable(
   }),
 );
 
+export const emailTemplates = pgTable(
+  'email_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').references(() => organizations.id),
+    templateKey: varchar('template_key', { length: 64 }).notNull(),
+    name: varchar('name', { length: 200 }).notNull(),
+    subject: varchar('subject', { length: 500 }).notNull(),
+    bodyHtml: text('body_html').notNull(),
+    bodyText: text('body_text'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgKeyIdx: uniqueIndex('email_templates_org_key_idx').on(t.organizationId, t.templateKey),
+  }),
+);
+
 export const communications = pgTable('communications', {
   id: uuid('id').primaryKey().defaultRandom(),
   applicationId: uuid('application_id').references(() => applications.id),
@@ -261,6 +303,11 @@ export const communications = pgTable('communications', {
   direction: direction('direction').notNull(),
   subject: varchar('subject', { length: 500 }),
   body: text('body').notNull(),
+  toEmail: varchar('to_email', { length: 320 }),
+  templateKey: varchar('template_key', { length: 64 }),
+  deliveryStatus: emailDeliveryStatus('delivery_status').notNull().default('sent'),
+  providerMessageId: varchar('provider_message_id', { length: 200 }),
+  errorMessage: text('error_message'),
   sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
   openedAt: timestamp('opened_at', { withTimezone: true }),
   repliedAt: timestamp('replied_at', { withTimezone: true }),
@@ -308,13 +355,34 @@ export const modelRuns = pgTable('model_runs', {
 // Relations
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  users: many(users),
+  jobs: many(jobs),
+  emailTemplates: many(emailTemplates),
+}));
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [users.organizationId],
+    references: [organizations.id],
+  }),
   jobsCreated: many(jobs),
 }));
 
 export const jobsRelations = relations(jobs, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [jobs.organizationId],
+    references: [organizations.id],
+  }),
   createdBy: one(users, { fields: [jobs.createdBy], references: [users.id] }),
   applications: many(applications),
+}));
+
+export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [emailTemplates.organizationId],
+    references: [organizations.id],
+  }),
 }));
 
 export const candidatesRelations = relations(candidates, ({ many }) => ({
@@ -356,6 +424,8 @@ export type Interview = typeof interviews.$inferSelect;
 export type Offer = typeof offers.$inferSelect;
 export type CompBand = typeof compBands.$inferSelect;
 export type Communication = typeof communications.$inferSelect;
+export type Organization = typeof organizations.$inferSelect;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type AuditLog = typeof auditLog.$inferSelect;
 export type TrainingLabel = typeof trainingLabels.$inferSelect;
 export type ModelRun = typeof modelRuns.$inferSelect;

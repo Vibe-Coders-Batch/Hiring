@@ -25,6 +25,8 @@ export interface ScreeningInput {
   applicationId: string;
   resumeBucket: string;
   resumeKey: string;
+  /** Human-readable questionnaire answers for Bedrock scoring */
+  questionnaireSummary?: string;
 }
 
 export interface ScreeningResult {
@@ -73,6 +75,7 @@ export async function runScreening(input: ScreeningInput): Promise<ScreeningResu
     jobTitle: row.job.title,
     jdMarkdown: row.job.jdMarkdown,
     hardFilters: row.job.hardFilters,
+    questionnaireSummary: input.questionnaireSummary,
   });
 
   const threshold = row.job.autoShortlistThreshold;

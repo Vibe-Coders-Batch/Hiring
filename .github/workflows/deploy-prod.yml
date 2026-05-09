@@ -1,8 +1,9 @@
-name: Deploy Production
+# AWS CDK production deploy — optional. The Vaivamm Hire Next.js app is hosted on Vercel + Neon per the product plan.
+# Run manually only when updating AWS Lambda/S3/SES/CDK stacks.
+name: Deploy Production (AWS CDK)
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
 
 permissions:
   id-token: write

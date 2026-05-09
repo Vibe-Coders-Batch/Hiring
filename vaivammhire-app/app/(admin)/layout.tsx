@@ -10,6 +10,7 @@ const NAV = [
   { href: '/admin/comp-bands', label: 'Comp bands' },
   { href: '/admin/offers', label: 'Offers' },
   { href: '/admin/communications', label: 'Comms' },
+  { href: '/admin/email-templates', label: 'Email templates' },
   { href: '/admin/labeling', label: 'Labeling' },
   { href: '/admin/models', label: 'Models' },
   { href: '/admin/agent', label: 'Agent' },

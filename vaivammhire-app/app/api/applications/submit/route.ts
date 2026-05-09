@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
+import { audit } from '@/server/db/audit';
 import { db } from '@/server/db';
 import { applications, candidates, jobs } from '@/server/db/schema';
-import { eq } from 'drizzle-orm';
+import {
+  parseQuestionnaireFromForm,
+  questionnaireToSummary,
+  type ScreeningQuestionShape,
+} from '@/lib/questionnaire';
 import { presignResumeUpload } from '@/server/services/s3';
-import { audit } from '@/server/db/audit';
 import { sendEmail } from '@/server/services/ses';
+import { runScreening } from '@/server/services/screening-pipeline';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -39,7 +45,6 @@ export async function POST(req: Request) {
     ext,
   });
 
-  // Stream the file to S3 via the presigned URL.
   const buf = await resume.arrayBuffer();
   const putRes = await fetch(upload.url, {
     method: 'PUT',
@@ -55,7 +60,10 @@ export async function POST(req: Request) {
     return new NextResponse('role unavailable', { status: 404 });
   }
 
-  // Upsert candidate by email (PRD §9 — candidates.email unique).
+  const screeningQs = ((job.screeningQuestions as ScreeningQuestionShape[] | null) ?? []).filter(Boolean);
+  const questionnairePayload = parseQuestionnaireFromForm(form, screeningQs);
+  const questionnaireSummary = questionnaireToSummary(questionnairePayload);
+
   const [candidate] = await db
     .insert(candidates)
     .values({
@@ -76,7 +84,12 @@ export async function POST(req: Request) {
 
   const [application] = await db
     .insert(applications)
-    .values({ jobId: job.id, candidateId: candidate.id, stage: 'applied' })
+    .values({
+      jobId: job.id,
+      candidateId: candidate.id,
+      stage: 'applied',
+      questionnaireAnswers: questionnairePayload as never,
+    })
     .returning();
   if (!application) return new NextResponse('application insert failed', { status: 500 });
 
@@ -89,8 +102,14 @@ export async function POST(req: Request) {
     payload: { jobId: job.id, ip: req.headers.get('x-forwarded-for') ?? null },
   });
 
-  // Background screening pipeline is fired by the S3 ObjectCreated EventBridge rule;
-  // we don't invoke it inline (PRD §6.2).
+  void runScreening({
+    applicationId: application.id,
+    resumeBucket: upload.bucket,
+    resumeKey: upload.key,
+    questionnaireSummary,
+  }).catch((err) => {
+    console.error('[screening]', application.id, err);
+  });
 
   await sendEmail({
     to: email,

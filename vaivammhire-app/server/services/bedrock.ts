@@ -82,6 +82,7 @@ export async function scoreResumeAgainstJob(args: {
   jobTitle: string;
   jdMarkdown: string;
   hardFilters: unknown;
+  questionnaireSummary?: string;
 }): Promise<Scorecard> {
   const raw = await converse({
     system: RESUME_SCORING_SYSTEM,

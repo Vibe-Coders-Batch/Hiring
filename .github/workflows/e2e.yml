@@ -25,6 +25,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
+      E2E_DISABLE_ADMIN_GUARD: 'true'
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/vaivammhire_test
       AWS_REGION: ap-south-1
       S3_RESUMES_BUCKET: test-resumes

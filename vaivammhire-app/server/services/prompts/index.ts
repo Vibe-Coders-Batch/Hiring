@@ -35,7 +35,12 @@ export function resumeScoringUserPrompt(args: {
   jobTitle: string;
   jdMarkdown: string;
   hardFilters: unknown;
+  questionnaireSummary?: string;
 }): string {
+  const qBlock = args.questionnaireSummary?.trim()
+    ? `SCREENING QUESTIONNAIRE RESPONSES:\n${args.questionnaireSummary.trim()}\n\n`
+    : '';
+
   return `Score this candidate against the job below. Output JSON only.
 
 JOB TITLE: ${args.jobTitle}
@@ -46,7 +51,7 @@ ${args.jdMarkdown}
 HARD FILTERS (auto-reject if not met):
 ${JSON.stringify(args.hardFilters)}
 
-COMPREHEND BASELINE NER (for context, may be incomplete):
+${qBlock}COMPREHEND BASELINE NER (for context, may be incomplete):
 ${JSON.stringify(args.comprehendEntities)}
 
 RESUME TEXT (extracted from PDF/DOCX via Textract):

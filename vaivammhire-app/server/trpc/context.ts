@@ -1,10 +1,18 @@
-import { verifyCognitoToken } from './auth';
+import { verifyStaffSession } from './auth';
 import type { Context } from './init';
 
-export async function createContext(req: Request): Promise<Context> {
+function bearerFromRequest(req: Request): string | null {
   const auth = req.headers.get('authorization');
-  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
-  const session = await verifyCognitoToken(token);
+  if (auth?.startsWith('Bearer ')) return auth.slice(7);
+  const cookie = req.headers.get('cookie');
+  if (!cookie) return null;
+  const m = cookie.match(/(?:^|;\s*)vaivamm_staff=([^;]+)/);
+  return m?.[1] ? decodeURIComponent(m[1].trim()) : null;
+}
+
+export async function createContext(req: Request): Promise<Context> {
+  const token = bearerFromRequest(req);
+  const session = await verifyStaffSession(token);
 
   const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??

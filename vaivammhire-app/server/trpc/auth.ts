@@ -1,5 +1,6 @@
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import { getServerEnv } from '@/lib/env';
+import { verifyDevToken } from '@/server/auth/dev-token';
 
 export interface AuthSession {
   userId: string;
@@ -49,4 +50,25 @@ export async function verifyCognitoToken(token: string | null | undefined): Prom
   } catch {
     return null;
   }
+}
+
+/**
+ * Prefer Cognito JWT; fall back to signed dev token when `AUTH_DEV_SECRET` is set (local / staging).
+ */
+export async function verifyStaffSession(token: string | null | undefined): Promise<AuthSession | null> {
+  const cognito = await verifyCognitoToken(token);
+  if (cognito) return cognito;
+
+  const env = getServerEnv();
+  if (!token || !env.AUTH_DEV_SECRET) return null;
+
+  const payload = verifyDevToken(token, env.AUTH_DEV_SECRET);
+  if (!payload) return null;
+
+  return {
+    userId: payload.userId,
+    email: payload.email,
+    role: payload.role,
+    cognitoSub: 'dev',
+  };
 }
