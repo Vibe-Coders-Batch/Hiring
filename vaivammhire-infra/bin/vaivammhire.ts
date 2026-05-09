@@ -13,8 +13,13 @@ const app = new cdk.App();
 
 const envName = (app.node.tryGetContext('env') as string | undefined) ?? 'dev';
 const region = process.env.CDK_DEFAULT_REGION ?? 'ap-south-1';
-const account = process.env.CDK_DEFAULT_ACCOUNT;
-const env = { account, region };
+const account = process.env.CDK_DEFAULT_ACCOUNT?.trim();
+// If account is omitted (not undefined), CDK resolves it from your AWS credential chain (CLI / SSO / CI).
+// Passing `account: undefined` explicitly breaks resolution and yields "Unable to resolve AWS account".
+const env =
+  account !== undefined && account !== ''
+    ? { account, region }
+    : { region };
 
 cdk.Tags.of(app).add('project', 'vaivammhire');
 cdk.Tags.of(app).add('env', envName);
