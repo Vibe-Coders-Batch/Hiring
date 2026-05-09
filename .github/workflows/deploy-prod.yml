@@ -28,7 +28,7 @@ jobs:
 
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm --filter vaivammhire-app test
-      - run: pnpm --filter vaivammhire-infra deploy -- --context env=prod
+      - run: pnpm --filter vaivammhire-infra run deploy -- --context env=prod
       - name: Invalidate CloudFront
         if: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID != '' }}
         run: |

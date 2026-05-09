@@ -133,7 +133,7 @@ jobs:
         run: |
           CTX="${CDK_CONTEXT_ENV:-prod}"
           echo "Deploying CDK context env=$CTX"
-          pnpm --filter vaivammhire-infra deploy -- --context env="$CTX"
+          pnpm --filter vaivammhire-infra run deploy -- --context env="$CTX"
 
       - name: Invalidate CloudFront (optional)
         if: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID != '' }}
