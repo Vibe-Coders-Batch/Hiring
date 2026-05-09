@@ -40,6 +40,23 @@ async function main() {
   if (!orgRow) throw new Error('Failed to seed organization');
 
   await db
+    .insert(users)
+    .values({
+      email: 'admin@vaivammhire.local',
+      name: 'Vaivamm Admin',
+      role: 'admin',
+      organizationId: orgRow.id,
+    })
+    .onConflictDoUpdate({
+      target: users.email,
+      set: {
+        name: 'Vaivamm Admin',
+        role: 'admin',
+        organizationId: orgRow.id,
+      },
+    });
+
+  await db
     .insert(emailTemplates)
     .values([
       {
@@ -185,10 +202,14 @@ Fixed CTC ₹18–24L + 20% variable, reviewed yearly.`,
   }
 
   console.log('✓ Seed complete.');
-  console.log('  - 1 user (hr.seed@vaivammcapital.com)');
-  console.log('  - 1 comp band (Wealth Advisory L3 Hyderabad, approved)');
-  console.log('  - 1 job (Senior RM Hyderabad, open)');
-  console.log('  - 1 candidate + application');
+  console.log('');
+  console.log('  Staff login — open /admin/login (requires AUTH_DEV_SECRET in env):');
+  console.log('    Email:       admin@vaivammhire.local');
+  console.log('    Dev secret:  same value as AUTH_DEV_SECRET (see .env.example)');
+  console.log('    Name:        Vaivamm Admin');
+  console.log('    Role:        admin');
+  console.log('');
+  console.log('  Also seeded: hr.seed@vaivammcapital.com (recruiter), comp band, job, sample application.');
 }
 
 main().catch((err) => {
