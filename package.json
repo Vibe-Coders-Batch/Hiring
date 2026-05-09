@@ -20,7 +20,8 @@
     "ml:install": "cd vaivammhire-ml && uv sync",
     "ml:test": "cd vaivammhire-ml && uv run pytest",
     "lint:all": "pnpm -r lint",
-    "test:all": "pnpm -r test"
+    "test:all": "pnpm -r test",
+    "local": "bash scripts/run-local.sh"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
