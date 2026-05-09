@@ -20,7 +20,13 @@ import { buildShareLinks } from '../server/services/share-links';
 import { slugify } from '../lib/slugify';
 
 async function main() {
-  console.log('Seeding dev data…');
+  try {
+    const raw = process.env.DATABASE_URL ?? '';
+    const url = new URL(raw.replace(/^postgresql:/i, 'http:'));
+    console.log(`Seeding dev data → database host: ${url.hostname}${url.port ? `:${url.port}` : ''}`);
+  } catch {
+    console.log('Seeding dev data…');
+  }
 
   const [insertedOrg] = await db
     .insert(organizations)

@@ -12,8 +12,7 @@ export default async function JobsListPage() {
     .select()
     .from(jobs)
     .where(eq(jobs.status, 'open'))
-    .orderBy(desc(jobs.createdAt))
-    .catch(() => []);
+    .orderBy(desc(jobs.createdAt));
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
