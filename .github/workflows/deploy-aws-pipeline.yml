@@ -1,0 +1,102 @@
+# Push to main → (1) apply Drizzle migrations to Neon using DATABASE_URL secret
+#              → (2) CDK deploy --all (VPC, RDS, S3, Cognito, Lambda, etc.)
+#
+# Required GitHub repo secrets:
+#   DATABASE_URL          Neon Postgres URL (Settings → Secrets → Actions). Never commit real URLs.
+#   AWS_DEPLOY_ROLE_ARN    IAM role for OIDC (aws-actions/configure-aws-credentials)
+#
+# Optional GitHub Variables (repo Settings → Variables → Actions):
+#   CDK_ENV                Defaults to prod; use staging for non-prod stacks.
+#
+# Security: rotate database credentials if they were ever pasted into chat, issues, or CI logs.
+
+name: Deploy pipeline (Neon migrate + AWS CDK)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_aws_deploy:
+        description: 'Run only database migrations (skip CDK)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: deploy-aws-pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  neon-migrate:
+    name: Neon · Drizzle migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install workspace
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run migrations (DATABASE_URL from secrets)
+        working-directory: vaivammhire-app
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::Secret DATABASE_URL is not set. Add it in repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          pnpm exec drizzle-kit migrate
+
+  deploy-cdk:
+    name: AWS · CDK deploy all stacks
+    needs: neon-migrate
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_aws_deploy != true }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AWS_REGION: ap-south-1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install workspace
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Unit tests (app)
+        run: pnpm --filter vaivammhire-app test
+
+      - name: CDK deploy all
+        env:
+          CDK_CONTEXT_ENV: ${{ vars.CDK_ENV }}
+        run: |
+          CTX="${CDK_CONTEXT_ENV:-prod}"
+          echo "Deploying CDK context env=$CTX"
+          pnpm --filter vaivammhire-infra deploy -- --context env="$CTX"
+
+      - name: Invalidate CloudFront (optional)
+        if: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID != '' }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
